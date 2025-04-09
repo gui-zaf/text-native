@@ -1,133 +1,107 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  Animated,
-  Easing,
-} from 'react-native';
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, Image } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export const LoadingScreen = ({ route, navigation }: any) => {
   const { text, type } = route.params;
-  const [progress] = useState(new Animated.Value(0));
   const [percentage, setPercentage] = useState(0);
-
-  const getLoadingTime = () => {
-    switch (type) {
-      case 'word':
-        return 2000;
-      case 'phrase':
-        return 4000;
-      case 'text':
-        return 8000;
-      default:
-        return 2000;
-    }
-  };
-
-  const getTypeText = () => {
-    switch (type) {
-      case 'word':
-        return 'palavra';
-      case 'phrase':
-        return 'frase';
-      case 'text':
-        return 'texto';
-      default:
-        return 'texto';
-    }
-  };
+  const [loadingText, setLoadingText] = useState("");
 
   useEffect(() => {
-    const duration = getLoadingTime();
-    const interval = 50; // Update percentage every 50ms
-    const steps = duration / interval;
-    const increment = 100 / steps;
+    if (type === "word") {
+      setLoadingText("Analisando palavra...");
+    } else if (type === "phrase") {
+      setLoadingText("Analisando frase...");
+    } else {
+      setLoadingText("Analisando texto...");
+    }
+    const interval = setInterval(() => {
+      setPercentage((prevPercentage) => {
+        const newPercentage = prevPercentage + 2;
 
-    let currentStep = 0;
-    const percentageInterval = setInterval(() => {
-      currentStep++;
-      setPercentage(Math.min(Math.round(currentStep * increment), 100));
-    }, interval);
+        if (newPercentage >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            navigation.navigate("Result", {
+              text,
+              type,
+            });
+          }, 500);
+          return 100;
+        }
 
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: duration,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: false,
-    }).start(() => {
-      clearInterval(percentageInterval);
-      navigation.replace('Result', { text, type });
-    });
+        return newPercentage;
+      });
+    }, 50);
 
-    return () => clearInterval(percentageInterval);
-  }, []);
-
-  const width = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
+    return () => clearInterval(interval);
+  }, [navigation, text, type]);
 
   return (
-    <View style={styles.container}>
-      <Image
-        source={require('../../assets/learning.gif')}
-        style={styles.gif}
-        resizeMode="contain"
-      />
-      <Text style={styles.percentage}>{percentage}%</Text>
-      <View style={styles.progressContainer}>
-        <Animated.View
-          style={[
-            styles.progressBar,
-            {
-              width,
-            },
-          ]}
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Image
+          source={require("../../assets/learning.gif")}
+          style={styles.loadingImage}
+          resizeMode="contain"
         />
+
+        <Text style={styles.loadingText}>{loadingText}</Text>
+
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${percentage}%` }]} />
+          </View>
+          <Text style={styles.progressText}>{percentage}%</Text>
+        </View>
       </View>
-      <Text style={styles.loadingText}>
-        Analisando o {getTypeText()}...
-      </Text>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#FFF",
+  },
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFF",
     padding: 20,
   },
-  gif: {
+  loadingImage: {
     width: 200,
     height: 200,
-    marginBottom: 30,
-  },
-  percentage: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#272729',
-    marginBottom: 10,
-  },
-  progressContainer: {
-    width: '100%',
-    height: 10,
-    backgroundColor: '#D9D9D9',
-    borderRadius: 5,
-    overflow: 'hidden',
-    marginBottom: 10,
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#4ACBCB',
-    borderRadius: 5,
+    marginBottom: 20,
   },
   loadingText: {
-    fontSize: 16,
-    color: '#272729',
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#272729",
+    marginBottom: 20,
+    textAlign: "center",
   },
-}); 
+  progressContainer: {
+    width: "100%",
+    alignItems: "center",
+  },
+  progressBar: {
+    width: "100%",
+    height: 10,
+    backgroundColor: "#F5F5F7",
+    borderRadius: 5,
+    overflow: "hidden",
+    marginBottom: 10,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#4ACBCB",
+    borderRadius: 5,
+  },
+  progressText: {
+    fontSize: 16,
+    color: "#272729",
+  },
+});
